@@ -1,0 +1,6 @@
+[submodule "repos/bower-babel-polyfill"]
+	path = repos/bower-babel-polyfill
+	url = git@github.com:pixeldrew/bower-babel-polyfill.git
+[submodule "repos/bower-babel-external-helpers"]
+	path = repos/bower-babel-external-helpers
+	url = git@github.com:pixeldrew/bower-babel-external-helpers.git
