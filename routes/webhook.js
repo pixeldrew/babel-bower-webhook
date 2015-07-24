@@ -53,10 +53,10 @@ function createBuildVersion(options) {
     cd('packages/babel');
     exec('scripts/build-dist.sh', {silent: true});
 
-    cp('-f', 'dist/external-helpers*', reposdir + 'babel-external-helpers/');
-    cp('-f', 'dist/polyfill*', reposdir + 'babel-polyfill/');
+    cp('-f', 'dist/external-helpers*', reposdir + 'bower-babel-external-helpers/');
+    cp('-f', 'dist/polyfill*', reposdir + 'bower-babel-polyfill/');
 
-    cd(reposdir + 'babel-external-helpers/');
+    cd(reposdir + 'bower-babel-external-helpers/');
 
     exec('bower version ' + options.version); // bower doesn't commit if it's a submodule
     exec('git add .');
@@ -64,7 +64,7 @@ function createBuildVersion(options) {
     exec('git tag -a ' + options.version + ' -m "Version Bump"');
     //exec('git push --tags');
 
-    cd(reposdir + 'babel-polyfill/');
+    cd(reposdir + 'bower-babel-polyfill/');
 
     exec('bower version ' + options.version); // bower doesn't commit if it's a submodule
     exec('git add .');
