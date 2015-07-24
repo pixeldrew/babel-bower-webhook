@@ -8,6 +8,10 @@ var paths = require('../package.json').paths;
 var Promise = require('promise');
 var rootdir = path.resolve(__dirname + '/../') + path.sep;
 
+webhook.on('ping', function(event) {
+    console.log('PING, ' + JSON.stringify(event.payload));
+});
+
 webhook.on('create', function(event) {
 
     var payload = event.payload;
