@@ -1,6 +1,0 @@
-[submodule "repos/babel-external-helpers"]
-	path = repos/babel-external-helpers
-	url = git@github.com:pixeldrew/babel-external-helpers.git
-[submodule "repos/babel-polyfill"]
-	path = repos/babel-polyfill
-	url = git@github.com:pixeldrew/babel-polyfill.git

@@ -1,33 +1,31 @@
 require('shelljs/global');
 
-var express = require('express');
-var router = express.Router();
+var createHandler = require('github-webhook-handler');
+var webhook = createHandler({path: '/webhook', secret: 'a-not-so-secret-secret'});
+
 var path = require('path');
 var paths = require('../package.json').paths;
 var Promise = require('promise');
 var rootdir = path.resolve(__dirname + '/../') + path.sep;
 
-router.post('/payload', function(req, res, next) {
+webhook.on('create', function(event) {
 
-    if (req.body.action === 'ping') {
-        res.status(200).send('Ok!');
-    }
+    var payload = event.payload;
 
-    if (req.body.ref_type === 'tag') {
-
-        var versionId = req.body.ref;
-
-        getVersion(req.body.repository.full_name, versionId)
+    if (payload.ref_type === 'tag') {
+        getVersion(payload.repository.full_name, payload.ref)
             .then(createBuildVersion);
     }
 
-    res.status(200).send('Ok!');
+});
 
+webhook.on('error', function(err) {
+    console.error('Error:', err.message);
 });
 
 
 function getVersion(repo, version) {
-    var url = 'https://github.com/' + repo + '/tarball/v' + version;
+    var url = 'https://github.com/' + repo + '/tarball/' + version;
 
     return new Promise(function(resolve, reject) {
 
@@ -49,11 +47,11 @@ function createBuildVersion(options) {
     var reposdir = rootdir + paths.repos + path.sep;
 
     cd(options.directory);
-    exec('npm install -d');
-    exec('node scripts/bootstrap.js');
+    exec('npm install -d --silent');
+    exec('node scripts/bootstrap.js', {silent:true});
 
     cd('packages/babel');
-    exec('scripts/build-dist.sh');
+    exec('scripts/build-dist.sh', {silent: true});
 
     cp('-f', 'dist/external-helpers*', reposdir + 'babel-external-helpers/');
     cp('-f', 'dist/polyfill*', reposdir + 'babel-polyfill/');
@@ -62,21 +60,21 @@ function createBuildVersion(options) {
 
     exec('bower version ' + options.version); // bower doesn't commit if it's a submodule
     exec('git add .');
-    exec('git commit -a -m "v' + options.version + '"');
-    exec('git tag -a v' + options.version);
-    exec('git push --follow-tags');
+    exec('git commit -a -m "' + options.version + '"');
+    exec('git tag -a ' + options.version + ' -m "Version Bump"');
+    //exec('git push --tags');
 
     cd(reposdir + 'babel-polyfill/');
 
     exec('bower version ' + options.version); // bower doesn't commit if it's a submodule
     exec('git add .');
-    exec('git commit -a -m "v' + options.version + '"');
-    exec('git tag -a v' + options.version);
-    exec('git push --follow-tags');
+    exec('git commit -a -m "' + options.version + '"');
+    exec('git tag -a ' + options.version + ' -m "Version Bump"');
+    //exec('git push --tags');
 
     cd(rootdir);
 
     rm('-rf', options.directory);
 }
 
-module.exports = router;
+module.exports = webhook;
