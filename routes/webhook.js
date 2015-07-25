@@ -18,13 +18,16 @@ webhook.on('create', function(event) {
 
     if (payload.ref_type === 'tag') {
         getVersion(payload.repository.full_name, payload.ref)
-            .then(createBuildVersion);
+            .then(createBuildVersion)
+            .catch(function(err) {
+                console.log('Error: ' + err);
+            })
     }
 
 });
 
 webhook.on('error', function(err) {
-    console.error('Error:', err.message);
+    console.error('Error:' + err.message);
 });
 
 
@@ -36,7 +39,9 @@ function getVersion(repo, version) {
         var outputdir = rootdir + paths.build + path.sep + version,
         tarfile = outputdir + '.tgz';
 
-        exec('curl -L -s -o ' + tarfile + ' ' + url);
+        if(exec('curl -L -s -o ' + tarfile + ' ' + url).code !== 0) {
+            reject(new Error('unable to download ' + url));
+        }
 
         mkdir('-p', outputdir);
         exec('tar xzf ' + tarfile + ' --strip-components=1 -C ' + outputdir);
@@ -50,31 +55,41 @@ function getVersion(repo, version) {
 function createBuildVersion(options) {
     var reposdir = rootdir + paths.repos + path.sep;
 
+    // change to dir
     cd(options.directory);
-    exec('npm install -d --silent');
-    exec('node scripts/bootstrap.js', {silent:true});
+
+    if(exec('npm install -d --silent').code !== 0) {
+        throw new Error('Unable to run npm install');
+    }
+
+    if(exec('node scripts/bootstrap.js', {silent:true}).code !== 0)
+        throw new Error('unable to run bootstrap');
 
     cd('packages/babel');
-    exec('scripts/build-dist.sh', {silent: true});
+
+
+    if(exec('scripts/build-dist.sh', {silent: true}).code !== 0)
+        throw new Error('unable to build dist');
+
 
     cp('-f', 'dist/external-helpers*', reposdir + 'bower-babel-external-helpers/');
     cp('-f', 'dist/polyfill*', reposdir + 'bower-babel-polyfill/');
 
     cd(reposdir + 'bower-babel-external-helpers/');
 
-    exec('bower version ' + options.version); // bower doesn't commit if it's a submodule
+    exec('bower version ' + options.version); // bump version, bower doesn't auto commit if it's a submodule line 61 bower/lib/commands/version.js
     exec('git add .');
     exec('git commit -a -m "' + options.version + '"');
     exec('git tag -a ' + options.version + ' -m "Version Bump"');
-    //exec('git push --tags');
+    exec('git push --tags');
 
     cd(reposdir + 'bower-babel-polyfill/');
 
-    exec('bower version ' + options.version); // bower doesn't commit if it's a submodule
+    exec('bower version ' + options.version);
     exec('git add .');
     exec('git commit -a -m "' + options.version + '"');
     exec('git tag -a ' + options.version + ' -m "Version Bump"');
-    //exec('git push --tags');
+    exec('git push --tags');
 
     cd(rootdir);
 
